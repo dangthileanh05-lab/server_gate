@@ -15,30 +15,14 @@ public class GateMain {
 
     public static void main(String[] args) throws Exception {
         Properties props = loadProperties();
-        String coordinatorUrl = firstNonBlank(
-                System.getenv("COORDINATOR_BASE_URL"),
-                props.getProperty("coordinator.base.url")
-        );
-        if (coordinatorUrl == null || coordinatorUrl.isBlank()) {
-            System.err.println("Set coordinator.base.url or COORDINATOR_BASE_URL");
-            System.exit(1);
-        }
-        String gateId = firstNonBlank(System.getenv("GATE_ID"), props.getProperty("gate.id"));
-        if (gateId == null || gateId.isBlank()) {
-            gateId = "1";
-        }
-        int processSeconds = parseInt(
-                firstNonBlank(System.getenv("PROCESS_SECONDS"), props.getProperty("process.seconds")),
-                3
-        );
-
-        String jdbcUrl = firstNonBlank(System.getenv("DB_URL"), System.getenv("JDBC_URL"), props.getProperty("db.url"));
-        String dbUser = firstNonBlank(System.getenv("DB_USER"), props.getProperty("db.user"));
-        String dbPassword = firstNonBlank(System.getenv("DB_PASSWORD"), props.getProperty("db.password"));
-        if (jdbcUrl == null || jdbcUrl.isBlank()) {
-            System.err.println("Set db.url or DB_URL / JDBC_URL");
-            System.exit(1);
-        }
+        String coordinatorUrl = "https://coordinator-server-ho9a.onrender.com/";
+        
+        String gateId = "4";
+        
+        int processSeconds = 30;
+        String jdbcUrl = "jdbc:mysql://avnadmin:AVNS_hJvxJVOg0JIQhTiukxs@mysql-245f921b-gateserver4.f.aivencloud.com:11416/defaultdb?ssl-mode=REQUIRED";
+        String dbUser = "avnadmin";
+        String dbPassword = "AVNS_hJVxJVOg0JIQhTiukxs";
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(jdbcUrl.trim());
