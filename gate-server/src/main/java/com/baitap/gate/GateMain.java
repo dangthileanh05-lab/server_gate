@@ -23,7 +23,7 @@ public class GateMain {
         
         String gateId = "4";
         int processSeconds = 30;
-        int port = parseInt(System.getenv("PORT"), 8080);
+        int port = 8080;
         HttpServer httpServer = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
         httpServer.createContext("/health", exchange -> {
             byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
@@ -46,11 +46,7 @@ public class GateMain {
         String jdbcUrl = "jdbc:mysql://avnadmin:AVNS_hJvxJVOg0JIQhTiukxs@mysql-245f921b-gateserver4.f.aivencloud.com:11416/defaultdb?ssl-mode=REQUIRED";
         String dbUser = "avnadmin";
         String dbPassword = "AVNS_hJVxJVOg0JIQhTiukxs";
-        if (jdbcUrl == null || jdbcUrl.isBlank()) {
-            System.err.println("Set db.url or DB_URL / JDBC_URL");
-            System.exit(1);
-        }
-
+    
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(jdbcUrl.trim());
         if (dbUser != null) {
