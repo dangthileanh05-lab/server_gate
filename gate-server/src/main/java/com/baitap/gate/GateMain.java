@@ -1,5 +1,6 @@
 package com.baitap.gate;
 
+import com.sun.net.httpserver.HttpServer;
 import com.baitap.gate.coordinator.CoordinatorClient;
 import com.baitap.gate.db.GateDatabase;
 import com.baitap.gate.model.JobPayload;
@@ -8,21 +9,47 @@ import com.zaxxer.hikari.HikariDataSource;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 import java.util.Properties;
+import java.util.concurrent.Executors;
 
 public class GateMain {
 
     public static void main(String[] args) throws Exception {
         Properties props = loadProperties();
-        String coordinatorUrl = "https://coordinator-server-ho9a.onrender.com/";
+        String coordinatorUrl = "https://coordinator-server-ho9a.onrender.com";
         
         String gateId = "4";
-        
         int processSeconds = 30;
+        int port = parseInt(System.getenv("PORT"), 8080);
+        HttpServer httpServer = HttpServer.create(new InetSocketAddress("0.0.0.0", port), 0);
+        httpServer.createContext("/health", exchange -> {
+            byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/plain; charset=utf-8");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        httpServer.createContext("/", exchange -> {
+            byte[] body = "OK".getBytes(StandardCharsets.UTF_8);
+            exchange.getResponseHeaders().add("Content-Type", "text/plain; charset=utf-8");
+            exchange.sendResponseHeaders(200, body.length);
+            exchange.getResponseBody().write(body);
+            exchange.close();
+        });
+        httpServer.setExecutor(Executors.newFixedThreadPool(2));
+        httpServer.start();
+        System.out.println("Gate HTTP server đang lắng nghe ở 0.0.0.0:" + port);
+
         String jdbcUrl = "jdbc:mysql://avnadmin:AVNS_hJvxJVOg0JIQhTiukxs@mysql-245f921b-gateserver4.f.aivencloud.com:11416/defaultdb?ssl-mode=REQUIRED";
         String dbUser = "avnadmin";
         String dbPassword = "AVNS_hJVxJVOg0JIQhTiukxs";
+        if (jdbcUrl == null || jdbcUrl.isBlank()) {
+            System.err.println("Set db.url or DB_URL / JDBC_URL");
+            System.exit(1);
+        }
 
         HikariConfig hc = new HikariConfig();
         hc.setJdbcUrl(jdbcUrl.trim());
@@ -40,7 +67,18 @@ public class GateMain {
         CoordinatorClient coordinator = new CoordinatorClient(coordinatorUrl);
         System.out.println("Cổng " + gateId + " đang hoạt động; thời gian xử lý là " + processSeconds + " giây");
 
-        Runtime.getRuntime().addShutdownHook(new Thread(ds::close));
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                httpServer.stop(1);
+            } catch (Exception ignored) {
+                // Best-effort stop for shutdown.
+            }
+            try {
+                ds.close();
+            } catch (Exception ignored) {
+                // Best-effort close for shutdown.
+            }
+        }));
 
         long idleSleepMs = 500;
         while (true) {
